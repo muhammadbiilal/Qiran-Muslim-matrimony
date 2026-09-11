@@ -27,7 +27,7 @@
       profile: p,
       filters: clone(DATA.DEFAULT_FILTERS),
       queue: DATA.DISCOVERY_ORDER.slice(),
-      qIndex: 0,
+      seen: 0,              /* profiles the user has acted on today */
       acted: {},            /* id -> 'like' | 'pass' */
       matches: clone(DATA.MATCHES),
       threads: clone(DATA.THREADS),
@@ -150,9 +150,10 @@
     if (unread > 0) {
       if (!dot) {
         dot = UI.h('<span class="tab__dot"></span>');
-        chatTab.appendChild(dot);
+        /* Anchored to the icon, so it sits on the icon's corner at any tab width. */
+        (UI.qs('.tab__ico', chatTab) || chatTab).appendChild(dot);
       }
-      dot.textContent = unread;
+      dot.textContent = unread > 99 ? '99+' : unread;
     } else if (dot) { dot.remove(); }
   }
 
@@ -1010,7 +1011,7 @@
       return '<div class="scr__body" style="display:flex;align-items:center;justify-content:center;padding:32px">' +
         '<div class="center" style="width:100%">' +
           '<div class="success-mark">' + I('check') + '</div>' +
-          '<h1 class="h-display">' + (p.next === 'app' ? 'Welcome back, Yusuf' : "You're verified") + '</h1>' +
+          '<h1 class="h-display">' + (p.next === 'app' ? 'Welcome back, Yusuf' : 'Your number is confirmed') + '</h1>' +
           '<p class="h-sub">' + (p.next === 'app'
             ? 'Taking you to your recommendations.'
             : 'Next, we will build the profile that people will see.') + '</p>' +
@@ -1039,7 +1040,7 @@
         ['intentions', 'What you are looking for', 'Family values, intentions, lifestyle'],
         ['photo', 'Photos', 'Up to six photos, in the order you choose']
       ];
-      return topbar({}) +
+      return topbar({ brand: true }) +
         '<div class="scr__body scr__body--pad">' +
           '<div class="step-head__ico">' + I('edit') + '</div>' +
           '<h1 class="h-display">Let us build your profile</h1>' +
@@ -1195,11 +1196,11 @@
       }
 
       var total = S.queue.length;
-      var done = total - activeQueue().length;
+      var position = Math.min(S.seen + 1, total);
       return head +
         '<div class="disc">' +
           '<div class="disc__meta">' +
-            '<span class="disc__count">Today\'s recommendations · <b>' + (done + 1) + ' of ' + total + '</b></span>' +
+            '<span class="disc__count">Today\'s recommendations · <b>' + position + ' of ' + total + '</b></span>' +
             '<span class="disc__count">' + (fc ? fc + ' filters on' : 'No filters') + '</span>' +
           '</div>' +
           '<div class="disc__deck" data-deck>' + cardHTML(p) + '</div>' +
@@ -1242,18 +1243,26 @@
 
     var stampLike = UI.qs('.stamp--like', card);
     var stampPass = UI.qs('.stamp--pass', card);
-    var startX = 0, startY = 0, dx = 0, dy = 0, dragging = false, moved = false;
+    var startX = 0, startY = 0, dx = 0, dy = 0, dragging = false, moved = false, sc = 1;
+
+    /* Pointer deltas arrive in screen pixels; the card moves in the device's
+       own (possibly scaled) coordinate space, so convert between them. */
+    function scaleOf(el) {
+      var r = el.getBoundingClientRect();
+      return el.offsetWidth ? r.width / el.offsetWidth : 1;
+    }
 
     card.addEventListener('pointerdown', function (ev) {
       if (ev.target.closest('[data-open]')) return;
       dragging = true; moved = false;
+      sc = scaleOf(card) || 1;
       startX = ev.clientX; startY = ev.clientY;
       card.style.transition = 'none';
       card.setPointerCapture(ev.pointerId);
     });
     card.addEventListener('pointermove', function (ev) {
       if (!dragging) return;
-      dx = ev.clientX - startX; dy = ev.clientY - startY;
+      dx = (ev.clientX - startX) / sc; dy = (ev.clientY - startY) / sc;
       if (Math.abs(dx) > 6) moved = true;
       card.style.transform = 'translate(' + dx + 'px,' + dy * 0.28 + 'px) rotate(' + (dx / 18) + 'deg)';
       stampLike.style.opacity = UI.clamp(dx / 110, 0, 1);
@@ -1309,15 +1318,23 @@
   }
 
   function applyDecision(p, kind) {
-    S.acted[p.id] = kind;
+    S.seen++;
+    if (kind === 'pass' && p.likedYou && !S.celebrated[p.id]) {
+      /* The scripted mutual match must stay reachable for the presenter, so a
+         pass sends this profile to the back of the queue instead of away. */
+      S.queue = S.queue.filter(function (id) { return id !== p.id; }).concat(p.id);
+    } else {
+      S.acted[p.id] = kind;
+    }
+
     if (kind === 'like' && p.likedYou && !S.celebrated[p.id]) {
       S.celebrated[p.id] = true;
       S.matches.unshift({ id: p.id, matchedOn: 'Just now', state: 'new' });
-      setTimeout(function () { go('e01', { id: p.id }, { mode: 'replace' }); }, 380);
+      setTimeout(function () { go('e01', { id: p.id }, { mode: 'root' }); }, 380);
       return;
     }
     setTimeout(function () {
-      go('d01', {}, { mode: 'replace' });
+      go('d01', {}, { mode: 'root' });
       if (kind === 'like') {
         UI.toast(root, 'Liked. We will let you know if it is mutual.', 'heart');
       }
@@ -1342,17 +1359,7 @@
         var kind = t.dataset.act;
         t.classList.add('act-btn--pulse');
         if (kind === 'like') heartBurst(el);
-        S.acted[person.id] = kind;
-        if (kind === 'like' && person.likedYou && !S.celebrated[person.id]) {
-          S.celebrated[person.id] = true;
-          S.matches.unshift({ id: person.id, matchedOn: 'Just now', state: 'new' });
-          setTimeout(function () { go('e01', { id: person.id }, { mode: 'replace' }); }, 420);
-        } else {
-          setTimeout(function () {
-            go('d01', {}, { mode: 'root' });
-            if (kind === 'like') UI.toast(root, 'Liked. We will let you know if it is mutual.', 'heart');
-          }, 420);
-        }
+        applyDecision(person, kind);
       });
     }
   });
@@ -1934,7 +1941,9 @@
     },
     mount: function (el, p) {
       setTimeout(function () {
+        /* Applying filters produces a freshly ranked queue for the day. */
         S.queue = DATA.DISCOVERY_ORDER.filter(function (id) { return !S.acted[id]; });
+        S.seen = 0;
         go('d01', {}, { mode: 'root' });
         setTimeout(function () {
           UI.toast(root, 'Filters applied · ' + activeQueue().length + ' recommendations', 'check');
@@ -2023,27 +2032,70 @@
      Mount & global wiring
      ====================================================================== */
 
+  /* ---- Device fitting --------------------------------------------------
+     The app always renders at a true 390 x 844. If the window is too short
+     to show that at 1:1, the whole device is scaled down rather than the
+     screen being resized — so the layout the client sees is always the
+     layout the handset will produce.
+     ------------------------------------------------------------------- */
+
+  var DEVICE_W = 410, DEVICE_H = 864;   /* screen + 10px bezel all round */
+  var FULLSCREEN_Q = '(max-width: 560px), (max-height: 700px)';
+  var fitEl = null, phoneEl = null, fitHandler = null;
+
+  function fitPhone() {
+    if (!fitEl || !phoneEl || !fitEl.parentNode) return;
+
+    if (window.matchMedia(FULLSCREEN_Q).matches) {
+      fitEl.style.width = '';
+      fitEl.style.height = '';
+      phoneEl.style.transform = '';
+      return;
+    }
+
+    /* Measure against the viewport, not the stage: the stage grows to fit the
+       device, so measuring it would be circular and never trigger a scale. */
+    var bar = document.getElementById('presenter-bar');
+    var barH = bar ? bar.offsetHeight : 48;
+    var availW = document.documentElement.clientWidth - 32;
+    var availH = window.innerHeight - barH - 88;  /* stage padding + caption */
+    var scale = Math.min(1, availW / DEVICE_W, availH / DEVICE_H);
+    scale = Math.max(0.45, scale);
+
+    phoneEl.style.transform = scale < 1 ? 'scale(' + scale + ')' : '';
+    fitEl.style.width = Math.round(DEVICE_W * scale) + 'px';
+    fitEl.style.height = Math.round(DEVICE_H * scale) + 'px';
+  }
+
   function mount(container) {
     S = freshState();
     container.innerHTML =
       '<div class="stage-mobile">' +
-        '<div class="phone"><div class="phone__screen">' +
+        '<div class="phone-fit"><div class="phone"><div class="phone__screen">' +
           '<div class="app-notch"></div>' +
           '<div class="app-status">' + statusBar() + '</div>' +
           '<div class="app-stack"></div>' +
           '<nav class="tabbar" hidden>' + TABS.map(function (t) {
             return '<button class="tab" data-tab="' + t.key + '" data-tab-go="' + t.screen + '">' +
-              I(t.icon) + '<span>' + t.label + '</span></button>';
+              '<span class="tab__ico">' + I(t.icon) + '</span>' +
+              '<span class="tab__label">' + t.label + '</span></button>';
           }).join('') + '</nav>' +
-        '</div></div>' +
+        '</div></div></div>' +
         '<div class="stage-mobile__hint">' + I('mobile') +
-          'Simulated iOS / Android application · the production app is built in Flutter</div>' +
+          'Simulated iOS / Android application · 390 × 844 · the production app is built in Flutter</div>' +
       '</div>';
 
     root = UI.qs('.phone__screen', container);
     stack = UI.qs('.app-stack', root);
     statusEl = UI.qs('.app-status', root);
     tabsEl = UI.qs('.tabbar', root);
+    fitEl = UI.qs('.phone-fit', container);
+    phoneEl = UI.qs('.phone', container);
+
+    if (fitHandler) window.removeEventListener('resize', fitHandler);
+    fitHandler = UI.debounce(fitPhone, 80);
+    window.addEventListener('resize', fitHandler);
+    fitPhone();
 
     UI.on(root, 'click', '[data-back]', function (e) { e.preventDefault(); back(); });
     UI.on(root, 'click', '[data-go]', function (e, t) {
@@ -2105,7 +2157,8 @@
       nav.className = 'tabbar';
       nav.innerHTML = TABS.map(function (t) {
         return '<button class="tab' + (t.key === def.tab ? ' is-active' : '') + '">' +
-          I(t.icon) + '<span>' + t.label + '</span></button>';
+          '<span class="tab__ico">' + I(t.icon) + '</span>' +
+          '<span class="tab__label">' + t.label + '</span></button>';
       }).join('');
       sandbox.appendChild(nav);
     }

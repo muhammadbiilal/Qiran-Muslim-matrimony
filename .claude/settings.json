@@ -9,7 +9,9 @@
       "WebFetch(domain:unsplash.com)",
       "Bash(node drive.js '[ *)",
       "Bash(rm -f shots-ui/*.png)",
-      "Bash(rm -f shots-ui/8*.png)"
+      "Bash(rm -f shots-ui/8*.png)",
+      "Bash(node tabshot.js)",
+      "Bash(rm -f shots-ui/[0-9A-Z]*.png)"
     ]
   }
 }

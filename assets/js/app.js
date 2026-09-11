@@ -28,8 +28,8 @@
     bar.innerHTML = '<div class="pbar">' +
       '<div class="pbar__brand">' + ICO.logoMark(20, 'light') + '<span>Prototype</span></div>' +
       '<div class="pbar__nav">' + ROUTES.map(function (r) {
-        return '<button class="pnav' + (route === r.key ? ' is-active' : '') + '" data-route="' + r.key + '">' +
-          I(r.icon) + E(r.label) + '</button>';
+        return '<button class="pnav' + (route === r.key ? ' is-active' : '') + '" data-route="' + r.key +
+          '" title="' + E(r.label) + '">' + I(r.icon) + '<span>' + E(r.label) + '</span></button>';
       }).join('') + '</div>' +
       '<div class="pbar__tools">' +
         (route === 'mobile'

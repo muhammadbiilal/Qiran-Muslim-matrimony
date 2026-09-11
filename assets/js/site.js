@@ -145,7 +145,7 @@
       '</div></section>' +
 
       '<section class="section"><div class="container">' +
-        shead('Features', 'Everything the app does', 'No premium tiers, no boosts, no distractions. One product, focused on marriage.') +
+        shead('Features', 'Everything the app does', 'One product, built for one purpose. Every capability below is part of the app.') +
         '<div class="fgrid">' + FEATURES.slice(0, 6).map(function (f) { return fcard(f[0], f[1], f[2]); }).join('') + '</div>' +
         '<div style="text-align:center;margin-top:40px">' +
           '<button class="site-btn site-btn--ghost" data-page="features">See all features' + I('arrow-right') + '</button></div>' +
