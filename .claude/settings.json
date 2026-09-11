@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -m 25 \"https://unsplash.com/napi/search/photos?query=hijab%20portrait&per_page=5\" -H \"User-Agent: Mozilla/5.0\" -o u1.json)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(curl -sL -m 30 \"https://unsplash.com/s/photos/hijab-portrait\" -H \"User-Agent: Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0 Safari/537.36\" -o h.html)",
+      "Bash(wc -c)",
+      "Bash(echo \"exit=$? size=$\\(wc -c < h.html\\)\")",
+      "WebFetch(domain:unsplash.com)",
+      "Bash(node drive.js '[ *)",
+      "Bash(rm -f shots-ui/*.png)",
+      "Bash(rm -f shots-ui/8*.png)"
+    ]
+  }
+}
