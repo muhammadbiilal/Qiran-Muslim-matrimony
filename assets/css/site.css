@@ -118,8 +118,16 @@
   border-radius: 28px; overflow: hidden; background: #fff;
   pointer-events: none; /* the website is informational, never interactive product */
 }
-.pframe__in .phone__screen { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* The screen is laid out at true device size and scaled down, so these read
+   as real screenshots rather than a reflowed narrow layout. */
+.pframe__in .phone__screen {
+  position: absolute; top: 0; left: 0;
+  width: 390px; height: 844px;
+  transform-origin: top left;
+  transform: scale(0.651);
+}
 .pframe--sm { width: 216px; }
+.pframe--sm .phone__screen { transform: scale(0.518); }
 .pframe--tilt-l { transform: rotate(-5deg) translateY(18px); }
 .pframe--tilt-r { transform: rotate(5deg) translateY(18px); }
 .pframe--raise { z-index: 2; }
@@ -127,6 +135,7 @@
 @media (max-width: 620px) {
   .shots { gap: var(--s-3); }
   .pframe { width: 210px; }
+  .pframe .phone__screen { transform: scale(0.503); }
   .pframe--sm { display: none; }
 }
 

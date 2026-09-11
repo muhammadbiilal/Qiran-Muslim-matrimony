@@ -60,11 +60,15 @@ body.route-mobile { overflow: hidden; }
 .ptool svg { width: 15px; height: 15px; }
 .ptool:hover { color: #fff; border-color: rgba(255, 255, 255, .4); background: rgba(255, 255, 255, .07); }
 
-@media (max-width: 820px) {
-  .pbar { gap: var(--s-2); padding: 0 var(--s-2); }
+@media (max-width: 1080px) {
+  .pbar { gap: var(--s-2); padding: 0 var(--s-3); }
   .pbar__brand span { display: none; }
   .ptool span { display: none; }
   .ptool { padding: 6px 9px; }
+}
+@media (max-width: 720px) {
+  .pnav { padding: 6px 9px; }
+  .pnav span { display: none; }
 }
 
 /* Presenter dropdown panels ------------------------------------------------ */

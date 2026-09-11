@@ -84,9 +84,11 @@
   .aside { width: 68px; padding-left: var(--s-2); padding-right: var(--s-2); }
   .aside__brand { justify-content: center; padding-left: 0; padding-right: 0; }
   .aside__brand .wordmark__text, .aside__label, .anav__item span, .auser__meta, .aside__signout span { display: none; }
-  .anav__item { justify-content: center; padding: 12px 0; }
-  .anav__count { position: absolute; margin-left: 26px; margin-top: -14px; }
-  .anav { position: relative; }
+  .anav__item { justify-content: center; padding: 12px 0; position: relative; }
+  .anav__count {
+    position: absolute; top: 4px; right: 6px; margin-left: 0;
+    min-width: 18px; height: 18px; padding: 0 4px; font-size: 10px;
+  }
   .auser { justify-content: center; padding-left: 0; padding-right: 0; }
   .aside__signout { justify-content: center; }
 }
